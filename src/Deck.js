@@ -1,37 +1,81 @@
 import React, { Component } from "react";
-import { View, Animated, PanResponder } from "react-native";
+import { View, Animated, PanResponder, Dimensions } from "react-native";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+const SWIPE_OUT_DURATION = 250;
 
 class Deck extends Component {
+  static defaultProps = {
+    onSwipeRight: () => {},
+    onSwipeLeft: () => {}
+  };
+
   constructor(props) {
     super(props);
-    const position = new Animated.ValueXY();
+    this.position = new Animated.ValueXY();
     const panResponder = PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (event, gesture) => {
-        position.setValue({ x: gesture.dx, y: gesture.dy });
+        this.position.setValue({ x: gesture.dx, y: gesture.dy });
       },
-      onPanResponderRelease: () => {}
+      onPanResponderRelease: (event, gesture) => {
+        if (gesture.dx > SWIPE_THRESHOLD) {
+          this.hideCard(true);
+        } else if (gesture.dx < -SWIPE_THRESHOLD) {
+          this.hideCard(false);
+        } else {
+          this.resetCardPosition();
+        }
+      }
     });
 
-    this.state = { panResponder, position };
+    this.state = { panResponder, index: 0 };
+  }
+
+  hideCard(isRight) {
+    Animated.timing(this.position, {
+      toValue: { x: isRight ? SCREEN_WIDTH : -SCREEN_WIDTH, y: 0 },
+      duration: SWIPE_OUT_DURATION
+    }).start(() => this.onSwipeComplete(isRight));
+  }
+
+  resetCardPosition() {
+    Animated.spring(this.position, { toValue: { x: 0, y: 0 } }).start();
+  }
+
+  onSwipeComplete(isRight) {
+    const { onSwipeLeft, onSwipeRight, data } = this.props;
+    const item = data[this.state.index];
+
+    // increment for the next card
+    this.setState({ index: this.state.index + 1 });
+
+    //reset position for the next card
+    this.position.setValue({ x: 0, y: 0 });
+
+    isRight ? onSwipeRight(item) : onSwipeLeft(item);
   }
 
   getCardStyle() {
-    const { position } = this.state;
-    const rotate = position.x.interpolate({
-      inputRange: [-500, 0, 500],
-      outputRange: ["120deg", "0deg", "120deg"]
+    const rotate = this.position.x.interpolate({
+      inputRange: [-SCREEN_WIDTH * 1.5, 0, SCREEN_WIDTH * 1.5],
+      outputRange: ["-120deg", "0deg", "120deg"]
     });
 
     return {
-      ...position.getLayout(),
+      ...this.position.getLayout(),
       transform: [{ rotate }]
     };
   }
 
   renderCards() {
-    return this.props.data.map((item, index) => {
-      if (index === 0) {
+    return this.props.data.map((item, i) => {
+      if (i < this.state.index) {
+        return null;
+      }
+
+      if (i === this.state.index) {
         return (
           <Animated.View
             key={item.id}
@@ -42,6 +86,7 @@ class Deck extends Component {
           </Animated.View>
         );
       }
+
       return this.props.renderCard(item);
     });
   }

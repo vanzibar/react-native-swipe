@@ -60,10 +60,23 @@ export default class App extends React.Component {
     );
   }
 
+  onSwipeRight(item) {
+    console.log("right");
+  }
+
+  onSwipeLeft(item) {
+    console.log("left");
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <Deck data={DATA} renderCard={this.renderCard} />
+        <Deck
+          data={DATA}
+          renderCard={this.renderCard}
+          onSwipeLeft={this.onSwipeLeft}
+          onSwipeRight={this.onSwipeRight}
+        />
       </View>
     );
   }
