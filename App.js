@@ -60,13 +60,18 @@ export default class App extends React.Component {
     );
   }
 
-  onSwipeRight(item) {
-    console.log("right");
+  renderNoMoreCards() {
+    return (
+      <Card title="All Done!">
+        <Text>"No more cards"</Text>
+        <Button backgroundColor="#03A9F4" title="Get more!" />
+      </Card>
+    );
   }
 
-  onSwipeLeft(item) {
-    console.log("left");
-  }
+  onSwipeRight(item) {}
+
+  onSwipeLeft(item) {}
 
   render() {
     return (
@@ -76,6 +81,7 @@ export default class App extends React.Component {
           renderCard={this.renderCard}
           onSwipeLeft={this.onSwipeLeft}
           onSwipeRight={this.onSwipeRight}
+          renderNoMoreCards={this.renderNoMoreCards}
         />
       </View>
     );

@@ -1,5 +1,11 @@
 import React, { Component } from "react";
-import { View, Animated, PanResponder, Dimensions } from "react-native";
+import {
+  Animated,
+  PanResponder,
+  Dimensions,
+  LayoutAnimation,
+  UIManager
+} from "react-native";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
@@ -31,6 +37,18 @@ class Deck extends Component {
     });
 
     this.state = { panResponder, index: 0 };
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.data !== this.props.data) {
+      this.setState({ index: 0 });
+    }
+  }
+
+  componentWillUpdate() {
+    UIManager.setLayoutAnimationEnabledExperimental &&
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    LayoutAnimation.spring();
   }
 
   hideCard(isRight) {
@@ -70,30 +88,51 @@ class Deck extends Component {
   }
 
   renderCards() {
-    return this.props.data.map((item, i) => {
-      if (i < this.state.index) {
-        return null;
-      }
+    if (this.state.index >= this.props.data.length) {
+      return this.props.renderNoMoreCards();
+    }
 
-      if (i === this.state.index) {
+    return this.props.data
+      .map((item, i) => {
+        if (i < this.state.index) {
+          return null;
+        }
+
+        if (i === this.state.index) {
+          return (
+            <Animated.View
+              key={item.id}
+              style={[this.getCardStyle(), styles.cardStyle]}
+              {...this.state.panResponder.panHandlers}
+            >
+              {this.props.renderCard(item)}
+            </Animated.View>
+          );
+        }
+
         return (
           <Animated.View
             key={item.id}
-            style={this.getCardStyle()}
-            {...this.state.panResponder.panHandlers}
+            style={[{ top: 10 * (i - this.state.index) }, styles.cardStyle]}
           >
             {this.props.renderCard(item)}
           </Animated.View>
         );
-      }
-
-      return this.props.renderCard(item);
-    });
+      })
+      .reverse();
   }
 
   render() {
     return this.renderCards();
   }
 }
+
+const styles = {
+  cardStyle: {
+    position: "absolute",
+    width: SCREEN_WIDTH,
+    zIndex: 0
+  }
+};
 
 export default Deck;
